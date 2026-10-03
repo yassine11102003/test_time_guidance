@@ -15,7 +15,8 @@ Every method plugs into the sampler at one place: the noise prediction is replac
 | `lidar` | closed form of eq. 17, from n = 16 lookahead samples (10-step DDIM) per prompt | no |
 
 Rewards: luminance −(ℓ̄ − 0.2)² and ImageReward (re-implemented in torch to be differentiable).
-Held-out metrics: CLIP score (ViT-L/14) and HPSv2.
+Held-out metric: CLIP score (ViT-L/14) between prompt and image. HPSv2 was left out: its package is
+unmaintained and we kept the evaluation to one well-understood held-out metric.
 
 ## Code
 
@@ -34,7 +35,6 @@ scripts/plots.py         figures -> results/plots/
 
 ```bash
 pip install -r requirements.txt
-pip install hpsv2          # optional: evaluate.py skips HPSv2 if it is unavailable
 ```
 ImageReward is unmaintained and breaks with transformers 5.x, hence the pinned versions in `requirements.txt`.
 

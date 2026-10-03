@@ -2,7 +2,7 @@
 
     python scripts/evaluate.py
 
-For each image: luminance and R_lum, ImageReward, held-out CLIP score and HPSv2, mean absolute pixel distance
+For each image: luminance and R_lum, ImageReward, held-out CLIP score, mean absolute pixel distance
 to the base image with the same prompt and seed. Both rewards are computed on every run (cross-effects).
 Writes results/metrics_per_image.csv and results/summary.csv (one row per run: means over 10 prompts x 4 seeds).
 """
@@ -45,19 +45,10 @@ class CLIPScore:
         return 100 * max(F.cosine_similarity(img, txt).item(), 0.0)
 
 
-def load_hps():
-    try:
-        import hpsv2
-        return lambda path, prompt: float(hpsv2.score([path], prompt, hps_version="v2.1")[0])
-    except Exception as e:  # old package, may not install cleanly: the report then uses CLIP only
-        print(f"HPSv2 unavailable ({e}); skipping it")
-        return None
-
-
 def main():
     runs = sorted(d for d in glob.glob("results/*")
                   if os.path.exists(f"{d}/results.jsonl") and not os.path.basename(d).startswith("test_"))
-    ir, clip, hps = ImageReward(), CLIPScore(), HPS()
+    ir, clip = ImageReward(), CLIPScore()
 
     rows = []
     for run in runs:
@@ -81,7 +72,6 @@ def main():
                 "R_lum": -(lum - cfg["lum_target"]) ** 2,
                 "imagereward": ir_score,
                 "clip": clip(pil, r["prompt"]),
-                "hps": hps(path, r["prompt"]),
                 "dist_to_base": (y - to_tensor(Image.open(base_path).convert("RGB"))).abs().mean().item()
                 if os.path.exists(base_path) else np.nan,
                 "time_per_image": r["time_per_image"],
@@ -90,7 +80,7 @@ def main():
 
     df = pd.DataFrame(rows)
     df.to_csv("results/metrics_per_image.csv", index=False)
-    metrics = ["luminance", "R_lum", "imagereward", "clip", "hps", "dist_to_base", "time_per_image"]
+    metrics = ["luminance", "R_lum", "imagereward", "clip", "dist_to_base", "time_per_image"]
     summary = (df.groupby(["run", "method", "reward", "beta"])[metrics].mean().reset_index()
                .sort_values(["reward", "method", "beta"]))
     summary.to_csv("results/summary.csv", index=False)
