@@ -57,7 +57,7 @@ def load_hps():
 def main():
     runs = sorted(d for d in glob.glob("results/*")
                   if os.path.exists(f"{d}/results.jsonl") and not os.path.basename(d).startswith("test_"))
-    ir, clip, hps = ImageReward(), CLIPScore(), load_hps()
+    ir, clip, hps = ImageReward(), CLIPScore(), HPS()
 
     rows = []
     for run in runs:
@@ -81,7 +81,7 @@ def main():
                 "R_lum": -(lum - cfg["lum_target"]) ** 2,
                 "imagereward": ir_score,
                 "clip": clip(pil, r["prompt"]),
-                "hps": hps(path, r["prompt"]) if hps else np.nan,
+                "hps": hps(path, r["prompt"]),
                 "dist_to_base": (y - to_tensor(Image.open(base_path).convert("RGB"))).abs().mean().item()
                 if os.path.exists(base_path) else np.nan,
                 "time_per_image": r["time_per_image"],
