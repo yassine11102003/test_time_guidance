@@ -44,6 +44,9 @@ def curves(summary, reward):
     if reward == "luminance":
         ax1.axhline(0.2, color=INK, ls=":", lw=1, label="target ℓ* = 0.2")
     ax1.set(xscale="log", xlabel="β", ylabel=label, title="(a) effect of the guidance strength")
+    betas = sorted(sub.beta.unique())
+    ax1.set_xticks(betas, [f"{b:g}" for b in betas])
+    ax1.minorticks_off()
     ax2.scatter([base[rcol]], [base["clip"]], color=BASE_COLOR, s=60, zorder=3, label="base")
     ax2.set(xlabel=f"reward ({rcol})", ylabel="CLIP score (held-out)", title="(b) reward vs prompt fidelity")
     for ax in (ax1, ax2):
