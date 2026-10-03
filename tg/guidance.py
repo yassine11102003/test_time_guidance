@@ -1,6 +1,8 @@
 """Guidance methods. Each one returns eps_tilde = eps - sigma_t * grad log h_t(x_t) (see tg/ddim.py)."""
 import torch
 
+from tg.ddim import NoGuidance, sample
+
 
 class DPS:
     """Tweedie-gradient guidance: log h_t(x_t) ~ beta * R(x0bar(x_t))  (primer eq. 14), differentiated."""
@@ -28,3 +30,41 @@ class DPS:
             "eps_norm": eps.detach().flatten(1).norm(dim=1).mean().item(),
         })
         return eps.detach() - correction                           # 5. eps_tilde
+
+
+class LiDAR:
+    """Lookahead-sample guidance (Kim et al. 2026, primer eq. 16-17). Uses reward values only, never grad R."""
+
+    def __init__(self, beta, n_lookahead=16, lookahead_steps=10, seed=1234):
+        self.beta, self.n, self.steps, self.seed = beta, n_lookahead, lookahead_steps, seed
+        self.log = []
+
+    @torch.no_grad()
+    def setup(self, model, x_T):
+        """Once per prompt: n cheap samples of p and their rewards, shared by all seeds."""
+        self.log = []
+        g = torch.Generator(x_T.device).manual_seed(self.seed)
+        z = torch.randn((self.n,) + x_T.shape[1:], generator=g, device=x_T.device)
+        xhat = sample(model, z, NoGuidance(), num_steps=self.steps)
+        r = model.reward(xhat)
+        self.xhat = xhat.flatten(1)  # [n, D]
+        self.logr = self.beta * r    # [n]
+        self.lookahead_R = r.tolist()
+
+    @torch.no_grad()
+    def eps(self, model, x, st):
+        eps = model.eps(x, st.t)
+        d2 = ((x.flatten(1)[:, None, :] - st.alpha_t * self.xhat[None]) ** 2).sum(-1)  # [B, n]
+        logw = -d2 / (2 * st.sigma_t ** 2)
+        w = torch.softmax(logw, dim=1)                       # eq. 16: plausibility of each x_hat as origin of x_t
+        w_r = torch.softmax(logw + self.logr[None], dim=1)  # same weights, tilted by exp(beta R_i)
+        grad = st.alpha_t / st.sigma_t ** 2 * ((w_r - w) @ self.xhat)  # eq. 17
+        correction = st.sigma_t * grad.view_as(x)
+
+        self.log.append({
+            "t": st.t,
+            "ess": (1.0 / (w ** 2).sum(1)).mean().item(),  # effective number of lookahead samples
+            "correction_norm": correction.flatten(1).norm(dim=1).mean().item(),
+            "eps_norm": eps.flatten(1).norm(dim=1).mean().item(),
+        })
+        return eps - correction
