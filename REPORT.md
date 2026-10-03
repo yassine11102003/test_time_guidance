@@ -188,20 +188,7 @@ correction σₜ‖∇log hₜ‖ (luminance, β = 10⁴, first prompt, n = 16):
   0.41 to 0.54. No lookahead sample is near the target 0.2, so even with perfect weights LiDAR could only pull towards
   images of luminance ≈ 0.41. A gradient, by contrast, points towards regions that p rarely visits.
 
-### 4.4 Compute-matched LiDAR
-
-DPS costs about 2.5 s per image more than LiDAR with n = 16. To check that LiDAR is not simply under-resourced, we
-spent that budget on lookahead samples: n = 128, at the best DPS β of each reward.
-
-| Method | β | n | mean luminance / ImageReward | CLIP | time / image |
-|---|---|---|---|---|---|
-| LiDAR | 10³ (luminance) | 128 | *to be filled* | | |
-| LiDAR | 10 (ImageReward) | 128 | *to be filled* | | |
-
-*Prediction before running it:* the ESS stays ≈ 1 (the collapse is caused by the dimension, not by n) and the
-improvement stays small; more samples only help through better coverage of the reward range.
-
-### 4.5 Cost
+### 4.4 Cost
 
 | | base | LiDAR (n = 16) | DPS |
 |---|---|---|---|
@@ -257,8 +244,11 @@ differentiable reward.
 - **Small scale.** 10 prompts × 4 seeds, no confidence intervals; small CLIP differences are not significant.
 - **A single held-out metric.** HPSv2 was dropped (unmaintained package).
 - **Only two of the four rewards** (no symmetry, no spatial mask).
-- **LiDAR hyperparameters** (n, lookahead steps) were not tuned beyond the compute-matched run; the original paper may
-  use a different setting that avoids the collapse.
+- **LiDAR was not compute-matched.** It ran with n = 16 lookahead samples and costs ≈ 4× less than DPS. The extra
+  cost of DPS would pay for about 100 more lookahead samples; we did not run that comparison. Our prediction: the ESS
+  would stay ≈ 1 (the collapse comes from the dimension, not from n) and the gain would stay small, with more samples
+  helping only through a better coverage of the reward range. The original paper may also use settings that avoid
+  the collapse.
 - **Infrastructure costs time.** ImageReward is unmaintained and breaks with transformers 5.x: we had to pin
   transformers 4.46 / diffusers 0.35 / huggingface-hub < 1.0 (see `requirements.txt`).
 
@@ -277,5 +267,5 @@ differentiable reward.
 ## Reproducibility
 
 Every result has its command in `README.md`. In short: `sh scripts/sweep_dps.sh` (base + DPS),
-`sh scripts/sweep_lidar.sh`, `sh scripts/sweep_lidar_n128.sh`, then `python scripts/evaluate.py` (table) and
+`sh scripts/sweep_lidar.sh`, then `python scripts/evaluate.py` (table) and
 `python scripts/plots.py` (figures).

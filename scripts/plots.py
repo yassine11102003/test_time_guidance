@@ -77,7 +77,6 @@ def grid(summary, reward):
 def main():
     os.makedirs(OUT, exist_ok=True)
     summary = pd.read_csv("results/summary.csv")
-    summary = summary[~summary.run.str.endswith("_n128")]  # compute-matched LiDAR runs: table only
     for reward in ("luminance", "imagereward"):
         if (summary.reward == reward).any():
             curves(summary, reward)
