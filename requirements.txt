@@ -1,9 +1,11 @@
 torch
-diffusers
-transformers
+# ImageReward (unmaintained) breaks with transformers 5.x, which in turn needs huggingface-hub>=1.0 via recent diffusers
+transformers>=4.44,<4.47
+diffusers>=0.33,<0.36
+huggingface-hub<1.0
 accelerate
 image-reward
-hpsv2
-open_clip_torch
+ftfy
+clip @ git+https://github.com/openai/CLIP.git
 pandas
 matplotlib
