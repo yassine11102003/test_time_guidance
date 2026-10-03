@@ -4,3 +4,4 @@ __pycache__/
 .env
 hf_cache/
 outputs/
+results/
