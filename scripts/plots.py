@@ -37,9 +37,17 @@ def curves(summary, reward):
         kw = dict(color=COLORS[method], lw=2, marker="o", ms=7, label=NAMES[method])
         ax1.plot(g.beta, g[col], **kw)
         ax2.plot(g[rcol], g["clip"], **kw)
+        # points that (almost) coincide share one label instead of overprinting
+        tol_x = 0.02 * (sub[rcol].max() - sub[rcol].min())
+        tol_y = 0.02 * (sub["clip"].max() - sub["clip"].min())
+        prev = None
         for _, row in g.iterrows():
-            ax2.annotate(f"β={row.beta:g}", (row[rcol], row["clip"]), textcoords="offset points", xytext=(5, 4),
-                         fontsize=8, color=MUTED)
+            if prev and abs(row[rcol] - prev[1]) < tol_x and abs(row["clip"] - prev[2]) < tol_y:
+                prev[0].set_text(prev[0].get_text() + f", {row.beta:g}")
+                continue
+            ann = ax2.annotate(f"β={row.beta:g}", (row[rcol], row["clip"]), textcoords="offset points",
+                               xytext=(5, 4), fontsize=8, color=MUTED)
+            prev = (ann, row[rcol], row["clip"])
     ax1.axhline(base[col], color=BASE_COLOR, ls="--", lw=1.5, label="base (no guidance)")
     if reward == "luminance":
         ax1.axhline(0.2, color=INK, ls=":", lw=1, label="target ℓ* = 0.2")
