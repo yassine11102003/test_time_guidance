@@ -40,7 +40,7 @@ class StableDiffusion:
         return enc(""), enc(prompt)
 
     def eps(self, x, t, emb, cfg=7.5):
-        """CFG noise prediction, eq. (6). Differentiable w.r.t. x when grad is enabled."""
+        """Classifier-free guidance noise prediction (Ho & Salimans, 2022). Differentiable w.r.t. x when grad is enabled."""
         uncond, cond = emb
         b = x.shape[0]
         x_in = torch.cat([x, x]).to(self.unet_dtype)

@@ -21,7 +21,7 @@ choice below is justified and every number can be reproduced with one command (s
 
 ## 1. Background: what has to be estimated
 
-Following the primer, the target is π ∝ p·e^{βR}, the solution of max_q E_q[R] − (1/β) KL(q‖p). Its noised marginals
+Following the KL-regularised formulation of reward-guided generation (Uehara et al., 2025), the target is π ∝ p·e^{βR}, the solution of max_q E_q[R] − (1/β) KL(q‖p). Its noised marginals
 are πₜ ∝ pₜ·hₜ with the tilt hₜ(xₜ) = E_{p(x₀|xₜ)}[e^{βR(x₀)}], so
 
     ∇log πₜ(xₜ) = ∇log pₜ(xₜ) + ∇log hₜ(xₜ).
@@ -39,7 +39,7 @@ identical across methods, so each guided image is paired with a base image.
 
 ### 2.1 DPS: gradient of the Tweedie approximation (uses ∇R)
 
-The Tweedie approximation (primer eq. 14) replaces the posterior p(x₀|xₜ) by a point mass at its mean
+The Tweedie approximation (Efron, 2011; used for guidance by Chung et al., 2023) replaces the posterior p(x₀|xₜ) by a point mass at its mean
 x̄₀(xₜ) = (xₜ − σₜ ε)/αₜ, so log hₜ(xₜ) ≈ β R(D(x̄₀(xₜ))). We differentiate this approximation:
 
     ∇log hₜ(xₜ) ≈ β · ∇ₓₜ R(D(x̄₀(xₜ))).
@@ -48,13 +48,13 @@ At every step: compute ε with gradients enabled, form x̄₀, decode with the V
 R → reward → VAE → x̄₀ → UNet → xₜ (one backward pass per step for the whole batch). The gradient is not propagated
 across steps.
 
-*Why this method.* It is the most direct way to use ∇R in the framework of the primer: it is the gradient of the
+*Why this method.* It is the most direct way to use ∇R in this framework: it is the gradient of the
 standard cheap estimate of the EFR, it has no hyperparameter other than β, and its known weakness (the point-mass
 approximation, worst when x̄₀ is blurry and β is large) gives a clear prediction to test.
 
 ### 2.2 LiDAR: lookahead samples (reward values only)
 
-Implemented from primer eq. 16–17. For each prompt we draw n = 16 lookahead samples x̂ⁱ ~ p with a cheap 10-step
+Implemented from Kim et al. (2026). For each prompt we draw n = 16 lookahead samples x̂ⁱ ~ p with a cheap 10-step
 DDIM sampler, compute their rewards Rᵢ once, and at every step use
 
     wᵢ ∝ exp(−‖xₜ − αₜ x̂ⁱ‖² / 2σₜ²),   wᵢᴿ ∝ wᵢ e^{βRᵢ},   ∇log hₜ = (αₜ/σₜ²) Σᵢ (wᵢᴿ − wᵢ) x̂ⁱ.
@@ -210,7 +210,7 @@ mean luminance within about one width of 0.2, slightly above it because p puts m
 | 3·10³ | 0.013 | ≈ 0.20–0.21 | 0.178 | ≈ 2 |
 | 10⁴ | 0.007 | ≈ 0.20 | 0.154 | ≈ 6 |
 
-DPS is close to π at moderate β, and its error grows with β, as the primer predicts for the Tweedie approximation.
+DPS is close to π at moderate β, and its error grows with β, as expected from the point-mass (Tweedie) approximation.
 
 **Why does it overshoot?** Two explanations, which we did not separate experimentally:
 1. *Point-mass approximation.* The guidance acts on R(x̄₀), the reward of the posterior *mean*, not on the expectation

@@ -1,4 +1,4 @@
-"""DDIM sampler (primer eq. 4-5, eta = 0) with a single entry point for guidance.
+"""DDIM sampler (Song et al., 2021; eta = 0) with a single entry point for guidance.
 
 A guidance method is any object with
     setup(model, x_T)    called once before the loop (e.g. LiDAR lookahead samples)
@@ -51,6 +51,6 @@ def sample(model, x_T, guidance=None, num_steps=50):
     guidance.setup(model, x)
     for st in ddim_schedule(model.alphas_cumprod, model.final_alpha_cumprod, num_steps):
         eps = guidance.eps(model, x, st)                  # eps_tilde: the only method-specific line
-        x0 = (x - st.sigma_t * eps) / st.alpha_t          # eq. (4), Tweedie estimate
-        x = (st.alpha_s * x0 + st.sigma_s * eps).detach()  # eq. (5) with eta = 0
+        x0 = (x - st.sigma_t * eps) / st.alpha_t          # Tweedie estimate (paper Eq. 2)
+        x = (st.alpha_s * x0 + st.sigma_s * eps).detach()  # deterministic DDIM step (eta = 0)
     return x

@@ -5,7 +5,7 @@ from tg.ddim import NoGuidance, sample
 
 
 class DPS:
-    """Tweedie-gradient guidance: log h_t(x_t) ~ beta * R(x0bar(x_t))  (primer eq. 14), differentiated."""
+    """Tweedie-gradient guidance: log h_t(x_t) ~ beta * R(x0bar(x_t)), differentiated (DPS-style, paper Eq. 5)."""
 
     def __init__(self, beta):
         self.beta = beta
@@ -33,7 +33,7 @@ class DPS:
 
 
 class LiDAR:
-    """Lookahead-sample guidance (Kim et al. 2026, primer eq. 16-17). Uses reward values only, never grad R."""
+    """Lookahead-sample guidance (Kim et al. 2026; paper Eq. 6-7). Uses reward values only, never grad R."""
 
     def __init__(self, beta, n_lookahead=16, lookahead_steps=10, seed=1234):
         self.beta, self.n, self.steps, self.seed = beta, n_lookahead, lookahead_steps, seed
@@ -56,9 +56,9 @@ class LiDAR:
         eps = model.eps(x, st.t)
         d2 = ((x.flatten(1)[:, None, :] - st.alpha_t * self.xhat[None]) ** 2).sum(-1)  # [B, n]
         logw = -d2 / (2 * st.sigma_t ** 2)
-        w = torch.softmax(logw, dim=1)                       # eq. 16: plausibility of each x_hat as origin of x_t
+        w = torch.softmax(logw, dim=1)                       # paper Eq. 6: plausibility of each x_hat as origin of x_t
         w_r = torch.softmax(logw + self.logr[None], dim=1)  # same weights, tilted by exp(beta R_i)
-        grad = st.alpha_t / st.sigma_t ** 2 * ((w_r - w) @ self.xhat)  # eq. 17
+        grad = st.alpha_t / st.sigma_t ** 2 * ((w_r - w) @ self.xhat)  # paper Eq. 7
         correction = st.sigma_t * grad.view_as(x)
 
         self.log.append({

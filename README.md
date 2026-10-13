@@ -6,13 +6,13 @@ only uses reward values.
 
 Every method plugs into the sampler at one place: the noise prediction is replaced by
 
-    ε̃ = ε − σₜ · ∇log hₜ(xₜ)        (score of πₜ = score of pₜ + ∇log hₜ, primer eq. 12)
+    ε̃ = ε − σₜ · ∇log hₜ(xₜ)        (score of πₜ = score of pₜ + ∇log hₜ, Eq. 4 of paper/main.pdf)
 
 | Method | Estimate of ∇log hₜ | Uses ∇R |
 |---|---|---|
 | `none` | 0 (pretrained sampler) | – |
-| `dps` | β ∇ₓₜ R(D(x̄₀(xₜ))), x̄₀ the Tweedie estimate (eq. 14, differentiated through UNet + VAE + reward) | yes |
-| `lidar` | closed form of eq. 17, from n = 16 lookahead samples (10-step DDIM) per prompt | no |
+| `dps` | β ∇ₓₜ R(D(x̄₀(xₜ))), x̄₀ the Tweedie estimate (paper Eq. 5, differentiated through UNet + VAE + reward) | yes |
+| `lidar` | closed form of Kim et al. (2026), paper Eq. 7, from n = 16 lookahead samples (10-step DDIM) per prompt | no |
 
 Rewards: luminance −(ℓ̄ − 0.2)² and ImageReward (re-implemented in torch to be differentiable).
 Held-out metric: CLIP score (ViT-L/14) between prompt and image. HPSv2 was left out: its package is
@@ -22,7 +22,7 @@ unmaintained and we kept the evaluation to one well-understood held-out metric.
 
 ```
 tg/sd.py          SD1.5 wrapper: CFG noise prediction, differentiable VAE decoding
-tg/ddim.py        DDIM grid + sampling loop (eq. 4-5, η = 0); the single guidance entry point
+tg/ddim.py        DDIM grid + sampling loop (Song et al., 2021; η = 0); the single guidance entry point
 tg/rewards.py     luminance, differentiable ImageReward
 tg/guidance.py    DPS, LiDAR
 scripts/check_setup.py   sanity checks (our DDIM vs diffusers, our ImageReward vs official, gradients)
